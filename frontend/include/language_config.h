@@ -2,57 +2,96 @@
 
 enum data_type
 {
-    NO_TYPE = 0,
-    NUMBER,
-    OPERATION,
-    VARIABLE
+    NO_TYPE     = -1,
+    PUNCTUATION =  0,
+    BIN_OP      =  1,
+    UN_OP       =  2,
+    NUMBER      =  3,
+    VARIABLE    =  4,
 };
 
-enum op_code
+enum punctuation
 {
-    NULL_TERMINATOR   = 0x0,
+    NULL_TERMINATOR   = 0,
 
-    OPEN_PARENTHESIS  = 0x1,
-    CLOSE_PARENTHESIS = 0x2,
+    OPEN_PARENTHESIS  = 1,
+    CLOSE_PARENTHESIS = 2,
 
-    OPEN_BRACES       = 0x3,
-    CLOSE_BRASES      = 0x4,
+    OPEN_BRACE        = 3,
+    CLOSE_BRACE       = 4,
 
-    END_OF_OPERATION  = 0x5,
+    END_OF_OPERATION  = 5,
 
-    ASSUME_BEGIN = 0x6,
-    ASSUME_END   = 0x7,
-    IF           = 0x8,
-    WHILE        = 0x9,
+    NUM_OF_PUNCT_SYMBOLS
+};
 
-    ADD    = 0xA,
-    SUB    = 0xB,
-    MUL    = 0xC,
-    DIV    = 0xD,
+enum bin_op_code
+{
+    ADD              = 0,
+    SUB              = 1,
+    MUL              = 2,
+    DIV              = 3,
+    POW              = 4,
 
-    NUM_OF_KEY_WORDS
+    IS_EQUAL         = 5,
+    GREATER          = 6,
+    LESS             = 7,
+    GREATER_OR_EQUAL = 8,
+    LESS_OR_EQUAL    = 9,
+    NOT_QEUAL        = 10,
+
+    ASSUME_BEGIN     = 11,
+    ASSUME_END       = 12,
+
+    NUM_OF_BIN_OP
+};
+
+enum un_op_code
+{
+    SIN   = 0,
+    COS   = 1,
+    SQRT  = 2,
+    LN    = 3,
+
+    NOT   = 4,
+    OUT   = 5,
+    OUT_S = 6,
+    IN    = 7,
+
+    IF    = 8,
+    WHILE = 9,
+
+    NUM_OF_UN_OP
 };
 
 typedef int8_t op_code_type;
 typedef int8_t var_index_type;
 
-union data_value
-{
-    double         num_value;
-    op_code_type   op_code;
-    var_index_type var_index;
-};
+const op_code_type NUM_OF_KEY_WORDS = NUM_OF_PUNCT_SYMBOLS +
+                                      NUM_OF_BIN_OP + NUM_OF_UN_OP;
+
+const op_code_type OP_CODE_POISON = -1;
 
 struct data
 {
-    data_type  data_type;
-    data_value data_value;
+    data_type data_type;
+    union
+    {
+        op_code_type   bin_op_code;
+        op_code_type   un_op_code;
+        double         num_value;
+        var_index_type var_index;
+        op_code_type   punct_op_code;
+    };
 };
 
 static const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
     {"\0",
      "Unexpected", "Journey", "Black", "Gates", "Precious", // ( ) { } ;
+     "ADD", "SUB", "MUL", "DIV", "POW",
+     "==", ">", "<", ">=", "<=", "!=",
      "Give him", "A pony",                                  // =
+     "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
      "One does not simply walk into Mordor",                // if
-     "So it begins",                                        // while
-     "ADD", "SUB", "MUL", "DIV"};                           // + - * /
+     "So it begins"};                                       // while
+

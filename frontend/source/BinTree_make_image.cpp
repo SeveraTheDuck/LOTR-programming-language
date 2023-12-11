@@ -71,50 +71,42 @@ BinTree_PrintNodes (const BinTree_node* const node,
                                         "fillcolor = \"#FFFFFF\", "
                                         "label = \"", (int64_t) node);
 
-    switch (node->data.data_type)
+    switch (node -> data .data_type)
     {
         case NO_TYPE:
         {
             fprintf (image_file, "none\", color = \"#FF0000\"]\n");
-
             break;
         }
 
         case NUMBER:
         {
             fprintf (image_file, BinTree_OUTPUT_F,
-                     node->data.data_value.num_value);
-            fprintf (image_file, "\", color = \"#00FF00\"];\n");
-
+                     node -> data .num_value);
             break;
         }
 
-        case OPERATION:
-        {
-            if (node->data .data_value .op_code < NUM_OF_KEY_WORDS)
-            {
-                fputs (KEY_WORDS_ARRAY [node->data .data_value .op_code],
-                       image_file);
-            }
-
-            else
-            {
-                fputs ("none", image_file);
-                fprintf (stderr, "Unknown op_code %hhu\n",
-                         node->data.data_value.op_code);
-            }
-
-            fprintf (image_file, "\", color = \"#0000FF\"];\n");
-
+        case PUNCTUATION:
+            fputs (KEY_WORDS_ARRAY [node ->data .punct_op_code], image_file);
             break;
-        }
+
+        case BIN_OP:
+            fputs (KEY_WORDS_ARRAY [node ->data .bin_op_code +
+                                    NUM_OF_PUNCT_SYMBOLS],
+                                    image_file);
+            break;
+
+        case UN_OP:
+            fputs (KEY_WORDS_ARRAY [node ->data .un_op_code +
+                                    NUM_OF_PUNCT_SYMBOLS + NUM_OF_BIN_OP],
+                                    image_file);
+            break;
 
         case VARIABLE:
-        {
-            if (node->data .data_value .var_index < tree->var_number)
+            if (node -> data .var_index < tree -> var_number)
             {
-                fputs (tree->name_table.var_table
-                       [node->data .data_value .var_index].var_name,
+                fputs (tree -> name_table .var_table
+                       [node -> data .var_index] .var_name,
                        image_file);
             }
 
@@ -123,10 +115,14 @@ BinTree_PrintNodes (const BinTree_node* const node,
                 fputs   ("Unknown variable", image_file);
                 fprintf (stderr, "Unknown variable\n");
             }
+            break;
 
-            fputs ("\", color = \"#00FFFF\"];\n", image_file);
-        }
+        default:
+            fprintf (stderr, "Unknown type\n");
+            return;
     }
+
+    fprintf (image_file, "\", color = \"#0000FF\"];\n");
 
     if (node->left)
     {

@@ -31,13 +31,17 @@
  */
 
 static void
-SeparateToTokens (const file_input* const input_parsed,
-                        List*       const tokens_list);
+SeparateToTokens (const char* const input_file_name,
+                        List* const tokens_list);
 
 static void
 GetTokenData (const file_input* const input_parsed,
                     size_t*     const index,
                     token*      const cur_token);
+
+static void
+GetTokenOperationType (      token* const cur_token,
+                       const op_code_type key_word);
 
 static BinTree_node*
 GetGrammar (const List*    const tokens_list,
@@ -103,27 +107,20 @@ ReadTree (const char*    const input_file_name,
         return nullptr;
     }
 
-    file_input input_parsed = {};
-    GetFileInput (input_file_name, &input_parsed, NOT_PARTED);
-    input_parsed .buffer [input_parsed .buffer_size - 1] = NULL_TERMINATOR;
-
-    if (input_parsed .buffer_size == 0) return nullptr;
-
     List tokens_list = {};
     List_Ctor (&tokens_list);
+    tokens_list .list_data [List_DUMMY_ELEMENT] .token_data_type = NO_TYPE;
 
-    SeparateToTokens (&input_parsed, &tokens_list);
-
-    FreeFileInput    (&input_parsed);
+    SeparateToTokens (input_file_name, &tokens_list);
 
     size_t token_index = 0;
     tree->root = GetGrammar (&tokens_list, &token_index, tree);
 
     /* null-termination check */
     syn_assert (tokens_list.list_data [token_index]
-                .token_data_type == OPERATION &&
+               .token_data_type == PUNCTUATION &&
                 tokens_list.list_data [token_index]
-                .data.op_code == NULL_TERMINATOR);
+               .punct_op_code == NULL_TERMINATOR);
 
     SetParents (nullptr, tree -> root);
 
@@ -133,30 +130,37 @@ ReadTree (const char*    const input_file_name,
 }
 
 static void
-SeparateToTokens (const file_input* const input_parsed,
-                        List*       const tokens_list)
+SeparateToTokens (const char* const input_file_name,
+                        List* const tokens_list)
 {
-    assert (input_parsed);
-    assert (input_parsed -> buffer);
     assert (tokens_list);
+
+    file_input input_parsed = {};
+
+    GetFileInput (input_file_name, &input_parsed, NOT_PARTED);
+    input_parsed .buffer [input_parsed .buffer_size - 1] = NULL_TERMINATOR;
+
+    if (input_parsed .buffer_size == 0) return;
 
     size_t index = 0;
 
     token cur_token = {.token_data_type = NUMBER,
-                       .data.num_value  = BinTree_POISON};
+                       .num_value  = BinTree_POISON};
 
-    while (index < input_parsed -> buffer_size)
+    while (index < input_parsed .buffer_size)
     {
-        if (isspace (input_parsed -> buffer [index]))
+        if (isspace (input_parsed .buffer [index]))
         {
             index++;
             continue;
         }
 
-        GetTokenData (input_parsed, &index, &cur_token);
+        GetTokenData (&input_parsed, &index, &cur_token);
 
         List_PushBack (&cur_token, tokens_list);
     }
+
+    FreeFileInput (&input_parsed);
 }
 
 static void
@@ -171,8 +175,8 @@ GetTokenData (const file_input* const input_parsed,
     if (input_parsed -> buffer [*index] == NULL_TERMINATOR)
     {
         (*index)++;
-        cur_token -> token_data_type = OPERATION;
-        cur_token -> data .op_code   = NULL_TERMINATOR;
+        cur_token -> token_data_type = PUNCTUATION;
+        cur_token -> punct_op_code   = NULL_TERMINATOR;
 
         return;
     }
@@ -189,8 +193,8 @@ GetTokenData (const file_input* const input_parsed,
                          key_word_len) == 0)
         {
             (*index) += key_word_len;
-            cur_token -> token_data_type = OPERATION;
-            cur_token -> data .op_code   = key_word;
+
+            GetTokenOperationType (cur_token, key_word);
 
             return;
         }
@@ -201,7 +205,7 @@ GetTokenData (const file_input* const input_parsed,
         int32_t n_read_elem = 0;
 
         sscanf (input_parsed -> buffer + *index, "%lg%n",
-                &(cur_token -> data .num_value), &n_read_elem);
+                &(cur_token  -> num_value), &n_read_elem);
 
         *index += (size_t) n_read_elem;
 
@@ -215,13 +219,45 @@ GetTokenData (const file_input* const input_parsed,
 
         while (isalnum (input_parsed -> buffer [*index]))
         {
-            cur_token -> data .var_name [str_length++] =
+            cur_token -> var_name [str_length++] =
                 input_parsed -> buffer  [(*index)++];
         }
 
-        cur_token -> data .var_name [str_length] = NULL_TERMINATOR;
+        cur_token -> var_name [str_length] = NULL_TERMINATOR;
 
         cur_token -> token_data_type = VARIABLE;
+    }
+}
+
+static void
+GetTokenOperationType (      token* const cur_token,
+                       const op_code_type key_word)
+{
+    assert (cur_token);
+
+    if (key_word < NUM_OF_PUNCT_SYMBOLS)
+    {
+        cur_token -> token_data_type = PUNCTUATION;
+        cur_token -> punct_op_code   = key_word;
+    }
+
+    else if (key_word < NUM_OF_PUNCT_SYMBOLS + NUM_OF_BIN_OP)
+    {
+        cur_token -> token_data_type = BIN_OP;
+        cur_token -> bin_op_code     = key_word - NUM_OF_PUNCT_SYMBOLS;
+    }
+
+    else if (key_word < NUM_OF_KEY_WORDS)
+    {
+        cur_token -> token_data_type = UN_OP;
+        cur_token -> bin_op_code     = key_word - NUM_OF_PUNCT_SYMBOLS -
+                                                  NUM_OF_BIN_OP;
+    }
+
+    else
+    {
+        fprintf (stderr, "Wrong data type\n");
+        return;
     }
 }
 
@@ -245,20 +281,39 @@ GetOperation (GrammarParams)
 {
     params_assert;
 
-    syn_assert (tokens_array [*token_index]
-                .token_data_type == OPERATION);
+    syn_assert (tokens_array [*token_index] .token_data_type == UN_OP ||
+                tokens_array [*token_index] .token_data_type == BIN_OP);
+
+    op_code_type cur_op_code = 0;
+
+    switch (tokens_array [*token_index] .token_data_type)
+    {
+        case UN_OP:
+            cur_op_code = tokens_array [*token_index] .un_op_code;
+            break;
+
+        case BIN_OP:
+            cur_op_code = tokens_array [*token_index] .bin_op_code;
+            break;
+
+        case PUNCTUATION: [[fallthrough]];
+        case VARIABLE:    [[fallthrough]];
+        case NUMBER:      [[fallthrough]];
+        case NO_TYPE:     [[fallthrough]];
+
+        default:
+            cur_op_code = OP_CODE_POISON;
+    }
 
     BinTree_node* new_node      = nullptr;
     BinTree_node* ret_node      = nullptr;
     BinTree_node* cur_separator = nullptr;
 
-    op_code_type cur_op_code = tokens_array [*token_index] .data .op_code;
-
     while (cur_op_code == ASSUME_BEGIN ||
            cur_op_code == IF           ||
            cur_op_code == WHILE)
     {
-        switch (tokens_array [*token_index] .data .op_code)
+        switch (cur_op_code)
         {
             case ASSUME_BEGIN:
                 (*token_index)++;
@@ -280,13 +335,16 @@ GetOperation (GrammarParams)
                 return nullptr;
         }
 
-        syn_assert (tokens_array [*token_index] .data
-                    .op_code == END_OF_OPERATION);
+        syn_assert (tokens_array [*token_index]
+                   .token_data_type == PUNCTUATION &&
+                    tokens_array [*token_index]
+                   .punct_op_code == END_OF_OPERATION);
+
         (*token_index)++;
 
         if (!ret_node)
         {
-            ret_node = BinTree_CtorNode (OPERATION, END_OF_OPERATION,
+            ret_node = BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
                                          new_node, nullptr, nullptr, tree);
             cur_separator = ret_node;
         }
@@ -294,13 +352,30 @@ GetOperation (GrammarParams)
         else
         {
             cur_separator -> right =
-                BinTree_CtorNode (OPERATION, END_OF_OPERATION,
+                BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
                                   new_node, nullptr, nullptr, tree);
 
             cur_separator = cur_separator -> right;
         }
 
-        cur_op_code = tokens_array [*token_index] .data .op_code;
+        switch (tokens_array [*token_index] .token_data_type)
+        {
+            case UN_OP:
+                cur_op_code = tokens_array [*token_index] .un_op_code;
+                break;
+
+            case BIN_OP:
+                cur_op_code = tokens_array [*token_index] .bin_op_code;
+                break;
+
+            case PUNCTUATION: [[fallthrough]];
+            case VARIABLE:    [[fallthrough]];
+            case NUMBER:      [[fallthrough]];
+            case NO_TYPE:     [[fallthrough]];
+
+            default:
+                cur_op_code = OP_CODE_POISON;
+        }
     }
 
     return ret_node;
@@ -311,15 +386,19 @@ GetAssume (GrammarParams)
 {
     params_assert;
 
-    BinTree_node* left_value  = GetVariable  (tokens_array, token_index, tree);
+    BinTree_node* left_value =
+        GetVariable  (tokens_array, token_index, tree);
 
-    syn_assert (tokens_array[*token_index] .data .op_code == ASSUME_END);
+    syn_assert (tokens_array [*token_index] .token_data_type == BIN_OP &&
+                tokens_array [*token_index] .un_op_code == ASSUME_END);
+
     (*token_index)++;
 
-    BinTree_node* right_value = GetExpression (tokens_array, token_index, tree);
+    BinTree_node* right_value =
+        GetExpression (tokens_array, token_index, tree);
 
-    return BinTree_CtorNode (OPERATION, ASSUME_BEGIN, left_value, right_value,
-                             nullptr, tree);
+    return BinTree_CtorNode (BIN_OP, ASSUME_BEGIN, left_value,
+                             right_value, nullptr, tree);
 }
 
 static BinTree_node*
@@ -327,18 +406,24 @@ GetIf (GrammarParams)
 {
     params_assert;
 
-    BinTree_node* left_value = GetPrimary (tokens_array, token_index, tree);
+    BinTree_node* left_value =
+        GetPrimary (tokens_array, token_index, tree);
 
-    syn_assert (tokens_array [*token_index] .data .op_code == OPEN_BRACES);
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == OPEN_BRACE);
+
     (*token_index)++;
 
-    BinTree_node* right_value = GetOperation (tokens_array, token_index, tree);
+    BinTree_node* right_value =
+        GetOperation (tokens_array, token_index, tree);
 
-    syn_assert (tokens_array [*token_index] .data .op_code == CLOSE_BRASES);
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == CLOSE_BRACE);
+
     (*token_index)++;
 
-    return BinTree_CtorNode (OPERATION, IF, left_value, right_value,
-                             nullptr, tree);
+    return BinTree_CtorNode (UN_OP, IF, left_value,
+                             right_value, nullptr, tree);
 }
 
 static BinTree_node*
@@ -346,18 +431,24 @@ GetWhile (GrammarParams)
 {
     params_assert;
 
-    BinTree_node* left_value = GetPrimary (tokens_array, token_index, tree);
+    BinTree_node* left_value =
+        GetPrimary (tokens_array, token_index, tree);
 
-    syn_assert (tokens_array [*token_index] .data .op_code == OPEN_BRACES);
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == OPEN_BRACE);
+
     (*token_index)++;
 
-    BinTree_node* right_value = GetOperation (tokens_array, token_index, tree);
+    BinTree_node* right_value =
+        GetOperation (tokens_array, token_index, tree);
 
-    syn_assert (tokens_array [*token_index] .data .op_code == CLOSE_BRASES);
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == CLOSE_BRACE);
+
     (*token_index)++;
 
-    return BinTree_CtorNode (OPERATION, WHILE, left_value, right_value,
-                             nullptr, tree);
+    return BinTree_CtorNode (UN_OP, WHILE, left_value,
+                             right_value, nullptr, tree);
 }
 
 static BinTree_node*
@@ -369,35 +460,35 @@ GetExpression (GrammarParams)
     BinTree_node* right_value = nullptr;
     BinTree_node* new_node    = nullptr;
 
-    bool is_operation = tokens_array [*token_index]
-                       .token_data_type == OPERATION;
+    bool is_bin_operation = tokens_array [*token_index]
+                           .token_data_type == BIN_OP;
 
-    bool is_add       = tokens_array [*token_index]
-                       .data .op_code   == ADD;
+    bool is_add           = tokens_array [*token_index]
+                           .bin_op_code     == ADD;
 
-    bool is_sub       = tokens_array [*token_index]
-                       .data .op_code   == SUB;
+    bool is_sub           = tokens_array [*token_index]
+                           .bin_op_code     == SUB;
 
-    while (is_operation && (is_add || is_sub))
+    while (is_bin_operation && (is_add || is_sub))
     {
         op_code_type op_code =
-            tokens_array [(*token_index)++] .data .op_code;
+            tokens_array [(*token_index)++] .bin_op_code;
 
         right_value = GetTerm (tokens_array, token_index, tree);
 
-        new_node = BinTree_CtorNode (OPERATION, op_code, left_value,
+        new_node = BinTree_CtorNode (BIN_OP, op_code, left_value,
                                      right_value, nullptr, tree);
 
         left_value = new_node;
 
-        is_operation = tokens_array [*token_index]
-                      .token_data_type == OPERATION;
+        is_bin_operation = tokens_array [*token_index]
+                          .token_data_type == BIN_OP;
 
-        is_add       = tokens_array [*token_index]
-                      .data .op_code   == ADD;
+        is_add           = tokens_array [*token_index]
+                          .bin_op_code     == ADD;
 
-        is_sub       = tokens_array [*token_index]
-                      .data .op_code   == SUB;
+        is_sub           = tokens_array [*token_index]
+                          .bin_op_code     == SUB;
     }
 
     return left_value;
@@ -412,35 +503,35 @@ GetTerm (GrammarParams)
     BinTree_node* right_value = nullptr;
     BinTree_node* new_node    = nullptr;
 
-    bool is_operation = tokens_array [*token_index]
-                       .token_data_type == OPERATION;
+    bool is_bin_operation = tokens_array [*token_index]
+                           .token_data_type == BIN_OP;
 
-    bool is_mul       = tokens_array [*token_index]
-                       .data .op_code   == MUL;
+    bool is_mul           = tokens_array [*token_index]
+                           .bin_op_code     == MUL;
 
-    bool is_div       = tokens_array [*token_index]
-                       .data .op_code   == DIV;
+    bool is_div           = tokens_array [*token_index]
+                           .bin_op_code     == DIV;
 
-    while (is_operation && (is_mul || is_div))
+    while (is_bin_operation && (is_mul || is_div))
     {
         op_code_type op_code =
-            tokens_array [(*token_index)++] .data .op_code;
+            tokens_array [(*token_index)++] .bin_op_code;
 
         right_value = GetPrimary (tokens_array, token_index, tree);
 
-        new_node = BinTree_CtorNode (OPERATION, op_code, left_value,
+        new_node = BinTree_CtorNode (BIN_OP, op_code, left_value,
                                      right_value, nullptr, tree);
 
         left_value = new_node;
 
-        is_operation = tokens_array [*token_index]
-                      .token_data_type == OPERATION;
+        is_bin_operation = tokens_array [*token_index]
+                          .token_data_type == BIN_OP;
 
-        is_mul       = tokens_array [*token_index]
-                      .data .op_code   == MUL;
+        is_mul           = tokens_array [*token_index]
+                          .bin_op_code     == MUL;
 
-        is_div       = tokens_array [*token_index]
-                      .data .op_code   == DIV;
+        is_div           = tokens_array [*token_index]
+                          .bin_op_code     == DIV;
     }
 
     return left_value;
@@ -453,8 +544,8 @@ GetPrimary (GrammarParams)
 
     BinTree_node* node = nullptr;
 
-    if (tokens_array [*token_index] .token_data_type == OPERATION &&
-        tokens_array [*token_index] .data .op_code   == OPEN_PARENTHESIS)
+    if (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+        tokens_array [*token_index] .punct_op_code   == OPEN_PARENTHESIS)
     {
         (*token_index)++;
 
@@ -462,8 +553,8 @@ GetPrimary (GrammarParams)
 
         syn_assert
         (
-            tokens_array [*token_index] .token_data_type == OPERATION &&
-            tokens_array [*token_index] .data .op_code   == CLOSE_PARENTHESIS
+            tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+            tokens_array [*token_index] .punct_op_code   == CLOSE_PARENTHESIS
         );
 
         (*token_index)++;
@@ -483,17 +574,16 @@ GetValue (GrammarParams)
     {
         case NUMBER:
             return BinTree_CtorNode (NUMBER,
-                                     tokens_array [(*token_index)++]
-                                     .data .num_value,
+                                     tokens_array [(*token_index)++] .num_value,
                                      nullptr, nullptr, nullptr, tree);
+
         case VARIABLE:
             return GetVariable (tokens_array, token_index, tree);
 
-        case OPERATION:
-            [[fallthrough]];
-
-        case NO_TYPE:
-            [[fallthrough]];
+        case PUNCTUATION: [[fallthrough]];
+        case BIN_OP:      [[fallthrough]];
+        case UN_OP:       [[fallthrough]];
+        case NO_TYPE:     [[fallthrough]];
 
         default:
             fprintf (stderr, "\n\n%zd\n", *token_index);
@@ -515,7 +605,7 @@ GetVariable (GrammarParams)
         return nullptr;
     }
 
-    strcpy (var_name, tokens_array [(*token_index)++] .data .var_name);
+    strcpy (var_name, tokens_array [(*token_index)++] .var_name);
 
     for (var_index_type i = 0; i < tree -> var_number; ++i)
     {

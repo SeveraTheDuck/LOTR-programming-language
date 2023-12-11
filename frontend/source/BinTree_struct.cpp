@@ -19,14 +19,14 @@ BinTree_Ctor       (BinTree* const tree,
         return BINTREE_STRUCT_NULLPTR;
     }
 
-    tree->init_name = init_name;
-    tree->init_line = init_line;
-    tree->init_file = init_file;
-    tree->init_func = init_func;
+    tree -> init_name = init_name;
+    tree -> init_line = init_line;
+    tree -> init_file = init_file;
+    tree -> init_func = init_func;
 
-    tree->name_table.var_table =
+    tree -> name_table .var_table =
         (variable*) calloc (INIT_VAR_NUMBER, sizeof (variable));
-    if (!tree->name_table.var_table)
+    if (!tree -> name_table .var_table)
     {
         perror ("var_table allocation error");
         tree->errors |= BINTREE_VAR_TABLE_NULLPTR;
@@ -36,17 +36,17 @@ BinTree_Ctor       (BinTree* const tree,
                       key_word < NUM_OF_KEY_WORDS;
                       key_word++)
     {
-        tree->name_table.key_words_array [key_word]
+        tree -> name_table .key_words_array  [key_word]
             .op_code = key_word;
-        tree->name_table.key_words_array [key_word]
+        tree -> name_table .key_words_array  [key_word]
             .key_word_name = KEY_WORDS_ARRAY [key_word];
     }
 
-    tree->root       = nullptr;
-    tree->n_elem     = 0;
-    tree->errors     = 0;
-    tree->var_number = 0;
-    tree->var_table_capacity = INIT_VAR_NUMBER;
+    tree -> root       = nullptr;
+    tree -> n_elem     = 0;
+    tree -> errors     = 0;
+    tree -> var_number = 0;
+    tree -> var_table_capacity = INIT_VAR_NUMBER;
 
     return tree->errors;
 }
@@ -75,39 +75,50 @@ BinTree_CtorNode   (const data_type data_type,
         return nullptr;
     }
 
-    new_node->data .data_type = data_type;
+    new_node -> data .data_type = data_type;
 
-    if (data_type == NUMBER)
+    switch (data_type)
     {
-        new_node->data .data_value .num_value = data_value;
+        case PUNCTUATION:
+            new_node -> data .punct_op_code =
+                (op_code_type) data_value;
+            break;
+
+        case UN_OP:
+            new_node -> data .un_op_code =
+                (op_code_type) data_value;
+            break;
+
+        case BIN_OP:
+            new_node -> data .bin_op_code =
+                (op_code_type) data_value;
+            break;
+
+        case NUMBER:
+            new_node -> data .num_value = data_value;
+            break;
+
+        case VARIABLE:
+            new_node -> data .var_index =
+                (var_index_type) data_value;
+            break;
+
+        case NO_TYPE:
+            [[fallthrough]];
+
+        default:
+            new_node -> data .data_type = NO_TYPE;
+            fprintf (stderr, "Unknown type of node\n");
+
+            free (new_node);
+            return nullptr;
     }
 
-    else if (data_type == OPERATION)
-    {
-        new_node->data .data_value .op_code =
-            (op_code_type) data_value;
-    }
+    new_node -> left   = left;
+    new_node -> right  = right;
+    new_node -> parent = parent;
 
-    else if (data_type == VARIABLE)
-    {
-        new_node->data .data_value .var_index =
-            (var_index_type) data_value;
-    }
-
-    else
-    {
-        new_node->data .data_type = NO_TYPE;
-        fprintf (stderr, "Unknown type of node\n");
-
-        free (new_node);
-        return nullptr;
-    }
-
-    new_node->left   = left;
-    new_node->right  = right;
-    new_node->parent = parent;
-
-    tree->n_elem++;
+    tree -> n_elem++;
 
     return new_node;
 }
@@ -123,28 +134,34 @@ MakeNodeByData (BinTree_node*      const node_left,
     assert (node_data);
     assert (tree);
 
-    if (node_data->data_type == NUMBER)
+    switch (node_data -> data_type)
     {
-        return BinTree_CtorNode (NUMBER, node_data->data_value .num_value,
-                                 node_left, node_right, parent, tree);
-    }
+        case PUNCTUATION:
+            return BinTree_CtorNode (PUNCTUATION, node_data -> punct_op_code,
+                                     node_left, node_right, parent, tree);
 
-    else if (node_data->data_type == OPERATION)
-    {
-        return BinTree_CtorNode (OPERATION, node_data->data_value .op_code,
-                                 node_left, node_right, parent, tree);
-    }
+        case UN_OP:
+            return BinTree_CtorNode (UN_OP, node_data -> un_op_code,
+                                     node_left, node_right, parent, tree);
 
-    else if (node_data->data_type == VARIABLE)
-    {
-        return BinTree_CtorNode (VARIABLE, node_data->data_value .var_index,
-                                 node_left, node_right, parent, tree);
-    }
+        case BIN_OP:
+            return BinTree_CtorNode (BIN_OP, node_data -> bin_op_code,
+                                     node_left, node_right, parent, tree);
 
-    else
-    {
-        fprintf (stderr, "Wrong data type\n");
-        return nullptr;
+        case NUMBER:
+            return BinTree_CtorNode (NUMBER, node_data -> num_value,
+                                     node_left, node_right, parent, tree);
+
+        case VARIABLE:
+            return BinTree_CtorNode (VARIABLE, node_data -> var_index,
+                                     node_left, node_right, parent, tree);
+
+        case NO_TYPE:
+            [[fallthrough]];
+
+        default:
+            fprintf (stderr, "Wrong data type\n");
+            return nullptr;
     }
 }
 
@@ -166,11 +183,11 @@ BinTree_DestroySubtree (BinTree_node* const node,
     BinTree_DestroySubtree (node->left,  tree);
     BinTree_DestroySubtree (node->right, tree);
 
-    node->data .data_type = NO_TYPE;
-    node->data .data_value .num_value = BinTree_POISON;
-    node->left   = nullptr;
-    node->right  = nullptr;
-    node->parent = nullptr;
+    node -> data .data_type = NO_TYPE;
+    node -> data .num_value = BinTree_POISON;
+    node -> left   = nullptr;
+    node -> right  = nullptr;
+    node -> parent = nullptr;
 
     tree->n_elem--;
 
@@ -189,11 +206,11 @@ BinTree_DestroyVarTable (BinTree* const tree)
     }
 
     for (var_index_type var_index = 0;
-                        var_index < tree->var_number;
+                        var_index < tree -> var_number;
                         var_index++)
     {
-        tree->name_table.var_table [var_index] .var_value = BinTree_POISON;
-        free (tree->name_table.var_table[var_index] .var_name);
+        tree -> name_table .var_table [var_index] .var_value = BinTree_POISON;
+        free (tree -> name_table .var_table [var_index] .var_name);
     }
 
     return NO_ERRORS;
@@ -237,29 +254,10 @@ BinTree_CheckThreads (const BinTree_node* const node,
         tree->errors |= LANGUAGE_NUMBER_WRONG_CHILDREN;
     }
 
-    if (node->data .data_type == OPERATION &&
+    if (node->data .data_type == BIN_OP &&
        (node->left == nullptr || node->right == nullptr))
     {
-        switch (node->data .data_value .op_code)
-        {
-            /*
-             * No breaks used in ADD, SUB and MUL because
-             * the behavior is the same for all of them,
-             * so switch can move through them.
-             * There are few of them, so it is not slow.
-             */
-            case ASSUME_BEGIN:
-                [[fallthrough]];
-            case ADD:
-                [[fallthrough]];
-            case SUB:
-                [[fallthrough]];
-            case MUL:
-                [[fallthrough]];
-            case DIV:
-                tree->errors |= LANGUAGE_OPERATION_WRONG_CHILDREN;
-                break;
-        }
+        tree->errors |= LANGUAGE_OPERATION_WRONG_CHILDREN;
     }
 
     if (node->left)
