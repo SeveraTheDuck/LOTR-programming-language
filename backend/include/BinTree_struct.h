@@ -27,7 +27,6 @@
  * for Dtor without aditional tree->root parameter.
  */
 #define BINTREE_DTOR(tree)                                      \
-        BinTree_DestroyVarTable ((tree));                       \
         BinTree_DestroySubtree  ((tree)->root, (tree));
 
 #define BinTree_VerifyAndDump(tree)                             \
@@ -73,24 +72,6 @@ struct BinTree_node
     BinTree_node*     parent;
 };
 
-struct key_word
-{
-    const char*  key_word_name;
-    op_code_type op_code;
-};
-
-struct variable
-{
-    char*  var_name;
-    double var_value;
-};
-
-struct name_table
-{
-    key_word  key_words_array [NUM_OF_KEY_WORDS];
-    variable* var_table;
-};
-
 struct BinTree
 {
     BinTree_node* root;
@@ -100,10 +81,6 @@ struct BinTree
     const char* init_name;
     const char* init_file;
     const char* init_func;
-
-    name_table     name_table;
-    var_index_type var_number;
-    var_index_type var_table_capacity;
 
     BinTree_error_type errors;
 };
@@ -146,7 +123,7 @@ CopyNode (BinTree_node* const node,
           BinTree_node* const parent,
           BinTree*      const c_tree);
 
-variable*
+double*
 ReallocVarTable (BinTree* const tree);
 
 void

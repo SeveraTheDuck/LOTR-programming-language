@@ -1,8 +1,8 @@
 #include "read_code.h"
 #include "BinTree_make_image.h"
-#include "BinTree_PrintPostOrder.h"
+#include "BinTree_PrintPreOrder.h"
 
-int main (const int32_t /*argc*/, const char** argv)
+int main (const int32_t argc, const char** argv)
 {
     BinTree tree = {};
     BINTREE_CTOR (&tree);
@@ -10,7 +10,15 @@ int main (const int32_t /*argc*/, const char** argv)
     ReadTree (argv[1], &tree);
     BinTree_MakeTreeImage (&tree);
 
-    // PrintTreeToFile (&tree);
+    if (argc < 3)
+    {
+        PrintTreeToFile (&tree);
+    }
+
+    else
+    {
+        PrintTreeToFile (&tree, argv [2]);
+    }
 
     BINTREE_DTOR (&tree);
 
