@@ -73,16 +73,22 @@ PrintInPreOrder (const BinTree_node* const node,
                                        "%u ", node -> data .punct_op_code);
             break;
 
+        case BIN_OP:
+            *output_index += snprintf (output_buf + *output_index,
+                                       PRINT_OUTPUT_ELEM_MAX_LEN,
+                                       "%u ", node -> data .bin_op_code);
+            break;
+
         case UN_OP:
             *output_index += snprintf (output_buf + *output_index,
                                        PRINT_OUTPUT_ELEM_MAX_LEN,
                                        "%u ", node -> data .un_op_code);
             break;
 
-        case BIN_OP:
+        case KEY_OP:
             *output_index += snprintf (output_buf + *output_index,
                                        PRINT_OUTPUT_ELEM_MAX_LEN,
-                                       "%u ", node -> data .bin_op_code);
+                                       "%u ", node -> data .key_op_code);
             break;
 
         case NUMBER:

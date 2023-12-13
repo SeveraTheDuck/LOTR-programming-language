@@ -6,8 +6,9 @@ enum data_type
     PUNCTUATION =  0,
     BIN_OP      =  1,
     UN_OP       =  2,
-    NUMBER      =  3,
-    VARIABLE    =  4,
+    KEY_OP      =  3,
+    NUMBER      =  4,
+    VARIABLE    =  5,
 };
 
 enum punctuation
@@ -58,17 +59,19 @@ enum un_op_code
     OUT_S = 6,
     IN    = 7,
 
-    IF    = 8,
-    WHILE = 9,
-
     NUM_OF_UN_OP
+};
+
+enum key_op_code
+{
+    IF    = 0,
+    WHILE = 1,
+
+    NUM_OF_KEY_OP
 };
 
 typedef int8_t op_code_type;
 typedef int8_t var_index_type;
-
-const op_code_type NUM_OF_KEY_WORDS = NUM_OF_PUNCT_SYMBOLS +
-                                      NUM_OF_BIN_OP + NUM_OF_UN_OP;
 
 const op_code_type OP_CODE_POISON = -1;
 
@@ -77,10 +80,11 @@ struct data
     data_type data_type;
     union
     {
+        op_code_type   punct_op_code;
         op_code_type   bin_op_code;
         op_code_type   un_op_code;
+        op_code_type   key_op_code;
         double         num_value;
         var_index_type var_index;
-        op_code_type   punct_op_code;
     };
 };

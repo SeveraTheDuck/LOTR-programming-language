@@ -84,13 +84,18 @@ BinTree_CtorNode   (const data_type data_type,
                 (op_code_type) data_value;
             break;
 
+        case BIN_OP:
+            new_node -> data .bin_op_code =
+                (op_code_type) data_value;
+            break;
+
         case UN_OP:
             new_node -> data .un_op_code =
                 (op_code_type) data_value;
             break;
 
-        case BIN_OP:
-            new_node -> data .bin_op_code =
+        case KEY_OP:
+            new_node -> data .key_op_code =
                 (op_code_type) data_value;
             break;
 
@@ -140,12 +145,16 @@ MakeNodeByData (BinTree_node*      const node_left,
             return BinTree_CtorNode (PUNCTUATION, node_data -> punct_op_code,
                                      node_left, node_right, parent, tree);
 
+        case BIN_OP:
+            return BinTree_CtorNode (BIN_OP, node_data -> bin_op_code,
+                                     node_left, node_right, parent, tree);
+
         case UN_OP:
             return BinTree_CtorNode (UN_OP, node_data -> un_op_code,
                                      node_left, node_right, parent, tree);
 
-        case BIN_OP:
-            return BinTree_CtorNode (BIN_OP, node_data -> bin_op_code,
+        case KEY_OP:
+            return BinTree_CtorNode (UN_OP, node_data -> key_op_code,
                                      node_left, node_right, parent, tree);
 
         case NUMBER:

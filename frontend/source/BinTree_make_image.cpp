@@ -87,22 +87,38 @@ BinTree_PrintNodes (const BinTree_node* const node,
         }
 
         case PUNCTUATION:
+        {
             fputs (KEY_WORDS_ARRAY [node ->data .punct_op_code], image_file);
             break;
+        }
 
         case BIN_OP:
+        {
             fputs (KEY_WORDS_ARRAY [node ->data .bin_op_code +
                                     NUM_OF_PUNCT_SYMBOLS],
                                     image_file);
             break;
+        }
 
         case UN_OP:
-            fputs (KEY_WORDS_ARRAY [node ->data .un_op_code +
-                                    NUM_OF_PUNCT_SYMBOLS + NUM_OF_BIN_OP],
-                                    image_file);
+        {
+            int32_t shift = NUM_OF_PUNCT_SYMBOLS + NUM_OF_BIN_OP;
+            fputs (KEY_WORDS_ARRAY [node ->data .un_op_code + shift], image_file);
+
             break;
+        }
+
+        case KEY_OP:
+        {
+            int32_t shift = NUM_OF_PUNCT_SYMBOLS +
+                            NUM_OF_BIN_OP + NUM_OF_UN_OP;
+            fputs (KEY_WORDS_ARRAY [node ->data .un_op_code + shift], image_file);
+
+            break;
+        }
 
         case VARIABLE:
+        {
             if (node -> data .var_index < tree -> var_number)
             {
                 fputs (tree -> name_table .var_table
@@ -116,6 +132,7 @@ BinTree_PrintNodes (const BinTree_node* const node,
                 fprintf (stderr, "Unknown variable\n");
             }
             break;
+        }
 
         default:
             fprintf (stderr, "Unknown type\n");

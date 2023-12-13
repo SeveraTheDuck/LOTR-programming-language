@@ -101,6 +101,11 @@ BinTree_PrintNodes (const BinTree_node* const node,
                                           node -> data .un_op_code);
             break;
 
+        case KEY_OP:
+            fprintf (image_file, "%d %d", node -> data .data_type,
+                                          node -> data .key_op_code);
+            break;
+
         case VARIABLE:
             fprintf (image_file, "%d %d", node -> data .data_type,
                                           node -> data .var_index);
