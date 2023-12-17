@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include "BinTree_config.h"
+#include "stack.h"
 
 #define BINTREE_CTOR_RECIVE_INFO const char*  const init_name,  \
                                  const size_t       init_line,  \
@@ -27,7 +28,7 @@
  * for Dtor without aditional tree->root parameter.
  */
 #define BINTREE_DTOR(tree)                                      \
-        BinTree_DestroyVarTable ((tree));                       \
+        BinTree_DestroyNameTable ((tree));                      \
         BinTree_DestroySubtree  ((tree)->root, (tree));
 
 #define BinTree_VerifyAndDump(tree)                             \
@@ -50,15 +51,16 @@ enum BinTree_errors
 {
     NO_ERRORS = 0,
 
-    BINTREE_STRUCT_NULLPTR    = 1 << 1,
-    BINTREE_ROOT_NULLPTR      = 1 << 2,
-    BINTREE_NODE_NULLPTR      = 1 << 3,
-    BINTREE_VAR_TABLE_NULLPTR = 1 << 4,
-    BINTREE_CYCLE_FOUND       = 1 << 5,
+    BINTREE_STRUCT_NULLPTR     = 1 << 1,
+    BINTREE_ROOT_NULLPTR       = 1 << 2,
+    BINTREE_NODE_NULLPTR       = 1 << 3,
+    BINTREE_VAR_TABLE_NULLPTR  = 1 << 4,
+    BINTREE_FUNC_TABLE_NULLPTR = 1 << 5,
+    BINTREE_CYCLE_FOUND        = 1 << 6,
 
-    LANGUAGE_WRONG_OPERATION_CODE     = 1 <<  6,
-    LANGUAGE_WRONG_DATA_TYPE          = 1 <<  7,
-    LANGUAGE_OPERATION_WRONG_CHILDREN = 1 <<  8,
+    LANGUAGE_WRONG_OPERATION_CODE     = 1 <<  7,
+    LANGUAGE_WRONG_DATA_TYPE          = 1 <<  8,
+    LANGUAGE_OPERATION_WRONG_CHILDREN = 1 <<  9,
     LANGUAGE_NUMBER_WRONG_CHILDREN    = 1 << 10,
     LANGUAGE_VARIABLE_WRONG_CHILDREN  = 1 << 11,
 
@@ -79,16 +81,11 @@ struct key_word
     op_code_type op_code;
 };
 
-struct variable
-{
-    char*  var_name;
-    double var_value;
-};
-
 struct name_table
 {
-    key_word  key_words_array [NUM_OF_KEY_WORDS];
-    variable* var_table;
+    key_word key_words_array [NUM_OF_KEY_WORDS];
+    Stack*   var_table;
+    Stack*   func_table;
 };
 
 struct BinTree
@@ -101,9 +98,7 @@ struct BinTree
     const char* init_file;
     const char* init_func;
 
-    name_table     name_table;
-    var_index_type var_number;
-    var_index_type var_table_capacity;
+    name_table  name_table;
 
     BinTree_error_type errors;
 };
@@ -136,7 +131,7 @@ BinTree_DestroySubtree (BinTree_node* const node,
                         BinTree*      const tree);
 
 BinTree_error_type
-BinTree_DestroyVarTable (BinTree* const tree);
+BinTree_DestroyNameTable (BinTree* const tree);
 
 BinTree_error_type
 BinTree_Verify (BinTree* const tree);
@@ -145,9 +140,6 @@ BinTree_node*
 CopyNode (BinTree_node* const node,
           BinTree_node* const parent,
           BinTree*      const c_tree);
-
-variable*
-ReallocVarTable (BinTree* const tree);
 
 void
 SetParents (BinTree_node* const parent,

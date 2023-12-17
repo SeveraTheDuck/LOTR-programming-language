@@ -1,19 +1,20 @@
 #include "print_asm.h"
 
-/* error strings are used to fill space in enum values and catch errors*/
-static const char* asm_op_array[] =
+/* error strings are used to fill space in enum values and catch errors */
+static const char* const asm_op_array [NUM_OF_KEY_WORDS] =
     {
-     "ERROR_NULL_TREMINATOR",   "ERROR_OPEN_PARENTHESIS",
-     "ERROR_CLOSE_PARENTHESIS", "ERROR_OPEN_BRACKET",
-     "ERROR_CLOSE_BRACKET",
-
-     ";", "ADD", "SUB", "MUL", "DIV", "POW",
-     "==", ">", "<", ">=", "<=", "!=", "=",
-
-     "ERROR_ASSUME_SECOND_PART",
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
-     "if",
-     "while"
+     "call",
+     "ret",
+
+     "ADD", "SUB", "MUL", "DIV", "POW",
+     "==", ">", "<", ">=", "<=", "!=",
+     "=",
+
+     "IF",
+     "WHILE",
+
+     ";"
     };
 
 #define IF_TRUE_LABEL     ":if_true_label%d\n"
@@ -71,9 +72,7 @@ PrintNodeToAsm (const BinTree_node* const node)
                 PrintNodeToAsm (node -> left);
                 PrintNodeToAsm (node -> right);
 
-                int32_t shift = NUM_OF_PUNCT_SYMBOLS;
-                printf ("\t\t%s\n", asm_op_array
-                                    [node -> data .bin_op_code + shift]);
+                printf ("\t\t%s\n", asm_op_array [node -> data .bin_op_code]);
             }
 
             break;
@@ -83,9 +82,7 @@ PrintNodeToAsm (const BinTree_node* const node)
         {
             PrintNodeToAsm (node -> right);
 
-            int32_t shift = NUM_OF_PUNCT_SYMBOLS + NUM_OF_BIN_OP;
-            printf ("\t\t%s\n", asm_op_array
-                                [node -> data .un_op_code + shift]);
+            printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
 
             break;
         }
@@ -135,6 +132,7 @@ PrintIfOperation (const BinTree_node* const node)
 {
     assert (node);
 
+    // to struct
     static int8_t if_number = 0;
     const  int8_t cur_if_number = if_number;
 
@@ -157,6 +155,7 @@ PrintWhileOperation (const BinTree_node* const node)
 {
     assert (node);
 
+    // to struct
     static int8_t while_number = 0;
     const  int8_t cur_while_number = while_number;
 

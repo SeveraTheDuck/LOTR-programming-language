@@ -15,7 +15,6 @@ PrintTreeToFile (const BinTree* const tree,
         return;
     }
 
-    /* count = ?? */
     char* const output_buf =
         (char* const) calloc (tree->n_elem, MAX_NODE_OUTPUT_LEN);
     if (!output_buf)
@@ -100,7 +99,13 @@ PrintInPreOrder (const BinTree_node* const node,
         case VARIABLE:
             *output_index += snprintf (output_buf + *output_index,
                                        PRINT_OUTPUT_ELEM_MAX_LEN,
-                                       "%u ", node -> data .var_index);
+                                       "%zd ", node -> data .var_index);
+            break;
+
+        case FUNCTION:
+            *output_index += snprintf (output_buf + *output_index,
+                                       PRINT_OUTPUT_ELEM_MAX_LEN,
+                                       "%zd ", node -> data .func_index);
             break;
 
         case NO_TYPE:

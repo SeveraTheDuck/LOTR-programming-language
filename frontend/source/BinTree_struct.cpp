@@ -24,14 +24,6 @@ BinTree_Ctor       (BinTree* const tree,
     tree -> init_file = init_file;
     tree -> init_func = init_func;
 
-    tree -> name_table .var_table =
-        (variable*) calloc (INIT_VAR_NUMBER, sizeof (variable));
-    if (!tree -> name_table .var_table)
-    {
-        perror ("var_table allocation error");
-        tree->errors |= BINTREE_VAR_TABLE_NULLPTR;
-    }
-
     for (op_code_type key_word = 0;
                       key_word < NUM_OF_KEY_WORDS;
                       key_word++)
@@ -42,11 +34,15 @@ BinTree_Ctor       (BinTree* const tree,
             .key_word_name = KEY_WORDS_ARRAY [key_word];
     }
 
-    tree -> root       = nullptr;
-    tree -> n_elem     = 0;
-    tree -> errors     = 0;
-    tree -> var_number = 0;
-    tree -> var_table_capacity = INIT_VAR_NUMBER;
+    tree -> root        = nullptr;
+    tree -> n_elem      = 0;
+    tree -> errors      = 0;
+
+    tree -> name_table .var_table  = (Stack*) calloc (1, sizeof (Stack));
+    tree -> name_table .func_table = (Stack*) calloc (1, sizeof (Stack));
+
+    STACK_CTOR (tree -> name_table .var_table);
+    STACK_CTOR (tree -> name_table .func_table);
 
     return tree->errors;
 }
@@ -108,6 +104,11 @@ BinTree_CtorNode   (const data_type data_type,
                 (var_index_type) data_value;
             break;
 
+        case FUNCTION:
+            new_node -> data .func_index =
+                (var_index_type) data_value;
+            break;
+
         case NO_TYPE:
             [[fallthrough]];
 
@@ -165,6 +166,10 @@ MakeNodeByData (BinTree_node*      const node_left,
             return BinTree_CtorNode (VARIABLE, node_data -> var_index,
                                      node_left, node_right, parent, tree);
 
+        case FUNCTION:
+            return BinTree_CtorNode (FUNCTION, node_data -> func_index,
+                                     node_left, node_right, parent, tree);
+
         case NO_TYPE:
             [[fallthrough]];
 
@@ -206,7 +211,7 @@ BinTree_DestroySubtree (BinTree_node* const node,
 }
 
 BinTree_error_type
-BinTree_DestroyVarTable (BinTree* const tree)
+BinTree_DestroyNameTable (BinTree* const tree)
 {
     if (!tree)
     {
@@ -214,12 +219,17 @@ BinTree_DestroyVarTable (BinTree* const tree)
         return BINTREE_STRUCT_NULLPTR;
     }
 
-    for (var_index_type var_index = 0;
-                        var_index < tree -> var_number;
-                        var_index++)
+    STACK_DTOR (tree -> name_table .var_table);
+    STACK_DTOR (tree -> name_table .func_table);
+
+    for (op_code_type key_word_index = 0;
+                      key_word_index <= NUM_OF_KEY_WORDS;
+                      key_word_index++)
     {
-        tree -> name_table .var_table [var_index] .var_value = BinTree_POISON;
-        free (tree -> name_table .var_table [var_index] .var_name);
+        tree -> name_table .key_words_array [key_word_index]
+            .key_word_name = nullptr;
+        tree -> name_table .key_words_array [key_word_index]
+            .op_code = OP_CODE_POISON;
     }
 
     return NO_ERRORS;
@@ -316,19 +326,6 @@ CopyNode (BinTree_node* const node,
                            &node->data,
                            CopyNode (node->right, node->parent, c_tree),
                            parent, c_tree);
-}
-
-variable*
-ReallocVarTable (BinTree* const tree)
-{
-    assert (tree);
-
-    tree->name_table.var_table =
-        (variable*) realloc (tree->name_table.var_table,
-                             (size_t) tree->var_table_capacity *
-                             sizeof (variable));
-
-    return tree->name_table.var_table;
 }
 
 void

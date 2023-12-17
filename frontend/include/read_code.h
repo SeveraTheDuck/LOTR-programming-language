@@ -14,7 +14,7 @@ struct token
         op_code_type un_op_code;
         op_code_type key_op_code;
         double       num_value;
-        char         var_name [VAR_NAME_MAX_LEN];
+        char         var_name  [VAR_NAME_MAX_LEN];
     };
 };
 
