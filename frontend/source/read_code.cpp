@@ -10,6 +10,7 @@
  * FArgs stands for GetFunctionArgs (),
  * Op    stands for GetOperation    (),
  * Call  stands for GetCall         (),
+ * Ret   stands for GetReturn       (),
  * A     stands for GetAssume       (),
  * If    stands for GetIf           (),
  * While stands for GetWhile        (),
@@ -26,7 +27,8 @@
  * F     ::= "Mellon" {FArgs}? B
  * FArgs ::= "Fellowship of the Ring" Var+
  * B     ::= "Black" Op+ "Gates"
- * Op    ::= Call | A | If | While "Precious"
+ * Op    ::= Call | Ret | A | If | While "Precious"
+ * Ret   ::= "Return of the King" E
  * Call  ::= "That still only counts as one" Var FArgs
  * A     ::= "Give him" Var "A pony" E
  * If    ::= "One does not simply walk into Mordor" P B B?
@@ -96,10 +98,13 @@ static BinTree_node*
 GetWhile             (GrammarParams);
 
 static BinTree_node*
-GetBody              (GrammarParams);
+GetCall              (GrammarParams);
 
 static BinTree_node*
-GetCall              (GrammarParams);
+GetRet               (GrammarParams);
+
+static BinTree_node*
+GetBody              (GrammarParams);
 
 static BinTree_node*
 GetExpression        (GrammarParams);
@@ -372,9 +377,13 @@ GetFunction (GrammarParams)
 
     BinTree_node* func_body = GetBody (GiveParams);
 
+    BinTree_node* whole_function =
+        BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
+                          func_body, func_args, nullptr, tree);
+
     BinTree_node* ret_node =
         BinTree_CtorNode (FUNCTION, cur_func_index,
-                          func_body, func_args, nullptr, tree);
+                          whole_function, nullptr, nullptr, tree);
 
     return ret_node;
 }
@@ -489,6 +498,11 @@ GetOperation (GrammarParams)
             new_node = GetCall   (GiveParams);
             break;
 
+        case RET:
+            (*token_index)++;
+            new_node = GetRet    (GiveParams);
+            break;
+
         default:
             syn_assert (0);
             return nullptr;
@@ -572,50 +586,6 @@ GetWhile (GrammarParams)
 }
 
 static BinTree_node*
-GetBody (GrammarParams)
-{
-    params_assert;
-
-    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
-                tokens_array [*token_index] .punct_op_code   == OPEN_BRACE);
-
-    (*token_index)++;
-
-    BinTree_node* ret_node = BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
-                                               nullptr, nullptr,
-                                               nullptr, tree);
-
-    BinTree_node* cur_separator = ret_node;
-
-    BinTree_node* new_node = nullptr;
-
-    while (IsBinOperation (tokens_array, token_index) ||
-           IsUnOperation  (tokens_array, token_index) ||
-           IsKeyOperation (tokens_array, token_index))
-    {
-        new_node = GetOperation (GiveParams);
-
-        if (!cur_separator)
-        {
-            cur_separator =
-                BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
-                                  nullptr, nullptr, nullptr, tree);
-        }
-
-        cur_separator -> left = new_node;
-
-        cur_separator = cur_separator -> right;
-    }
-
-    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
-                tokens_array [*token_index] .punct_op_code   == CLOSE_BRACE);
-
-    (*token_index)++;
-
-    return ret_node;
-}
-
-static BinTree_node*
 GetCall (GrammarParams)
 {
     params_assert;
@@ -632,6 +602,63 @@ GetCall (GrammarParams)
 
     return BinTree_CtorNode (BIN_OP, CALL, calling_func,
                              func_args, nullptr, tree);
+}
+
+static BinTree_node*
+GetRet (GrammarParams)
+{
+    params_assert;
+
+    BinTree_node* ret_node = GetExpression (GiveParams);
+
+    return BinTree_CtorNode (UN_OP, RET, nullptr,
+                             ret_node, nullptr, tree);
+}
+
+static BinTree_node*
+GetBody (GrammarParams)
+{
+    params_assert;
+
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == OPEN_BRACE);
+
+    (*token_index)++;
+
+    BinTree_node* ret_node      = nullptr;
+    BinTree_node* cur_separator = nullptr;
+    BinTree_node* new_node      = nullptr;
+
+    while (IsBinOperation (tokens_array, token_index) ||
+           IsUnOperation  (tokens_array, token_index) ||
+           IsKeyOperation (tokens_array, token_index))
+    {
+        new_node = GetOperation (GiveParams);
+
+        if (!ret_node)
+        {
+            ret_node =
+                BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
+                                  new_node, nullptr, nullptr, tree);
+            cur_separator = ret_node;
+        }
+
+        else
+        {
+            cur_separator -> right =
+                BinTree_CtorNode (PUNCTUATION, END_OF_OPERATION,
+                                  new_node, nullptr, nullptr, tree);
+
+            cur_separator = cur_separator -> right;
+        }
+    }
+
+    syn_assert (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+                tokens_array [*token_index] .punct_op_code   == CLOSE_BRACE);
+
+    (*token_index)++;
+
+    return ret_node;
 }
 
 static BinTree_node*

@@ -102,7 +102,7 @@ struct data
 const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
-     "Return of the king",                                  // ret
+     "Return of the King",                                  // ret
 
      "That still only counts as one",                       // call
      "ADD", "SUB", "MUL", "DIV", "POW",

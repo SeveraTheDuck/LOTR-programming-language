@@ -13,10 +13,20 @@ Black
             That still only counts as one foo Fellowship of the Ring Bilbo Mirtle Precious
         Gates Precious
     Gates Precious
+
+    That still only counts as one foo Fellowship of the Ring Mirtle Bilbo Precious
 Gates
 
 Mellon foo
 Fellowship of the Ring Bilbo Mirtle
 Black
     Give him Mirtle A pony Bilbo Precious
+    Return of the King Mirtle Precious
+Gates
+
+Mellon poo
+Fellowship of the Ring Frodo Sam
+Black
+    Give him Frodo A pony Sam Precious
+    Return of the King Frodo Precious
 Gates
