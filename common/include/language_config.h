@@ -24,15 +24,15 @@ enum un_op_code
     OUT_S,
     IN,
 
-    CALL,
     RET,
 
-    NUM_OF_UN_OP // 10
+    NUM_OF_UN_OP // 9
 };
 
 enum bin_op_code
 {
-    ADD = NUM_OF_UN_OP,
+    CALL = NUM_OF_UN_OP,
+    ADD,
     SUB,
     MUL,
     DIV,
@@ -73,8 +73,9 @@ enum punctuation
     ASSUME_END,
 
     FUNC_DEF,
+    FUNC_ARGS,
 
-    NUM_OF_KEY_WORDS // 32
+    NUM_OF_KEY_WORDS // 33
 };
 
 typedef int8_t op_code_type;
@@ -101,9 +102,9 @@ struct data
 const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
-     "That still only counts as one",                       // call
      "Return of the king",                                  // ret
 
+     "That still only counts as one",                       // call
      "ADD", "SUB", "MUL", "DIV", "POW",
      "==", ">", "<", ">=", "<=", "!=",
      "Give him",                                            // =
@@ -114,5 +115,6 @@ const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
      "Precious",                                            // ;
      "\0", "Unexpected", "Journey", "Black", "Gates",       // '\0' ( ) { }
      "A pony",                                              // = (second part)
-     "Mellon"                                               // func_def
+     "Mellon",                                              // func_def
+     "Fellowship of the Ring"                               // func_args
     };

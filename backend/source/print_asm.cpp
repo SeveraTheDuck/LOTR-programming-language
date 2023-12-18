@@ -1,6 +1,5 @@
 #include "print_asm.h"
 
-/* error strings are used to fill space in enum values and catch errors */
 static const char* const asm_op_array [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
@@ -35,10 +34,19 @@ static void
 PrintWhileOperation (const BinTree_node* const node);
 
 static void
-PrintFunction (const BinTree_node* const node);
+PrintCallOperation  (const BinTree_node* const node);
 
 static void
-PrintMainFunction (const BinTree_node* const node);
+PrintCallArgs       (const BinTree_node* const node);
+
+static void
+PrintFunction       (const BinTree_node* const node);
+
+static void
+PrintMainFunction   (const BinTree_node* const node);
+
+static void
+PrintFunctionArgs   (const BinTree_node* const node);
 
 void
 PrintTreeToAsm (const BinTree* const tree)
@@ -75,6 +83,11 @@ PrintNodeToAsm (const BinTree_node* const node)
                 printf ("\t\tPOP [%zd]\n", node -> left -> data .var_index);
             }
 
+            else if (node -> data .un_op_code == CALL)
+            {
+                PrintCallOperation (node);
+            }
+
             else
             {
                 PrintNodeToAsm (node -> left);
@@ -88,18 +101,8 @@ PrintNodeToAsm (const BinTree_node* const node)
 
         case UN_OP:
         {
-            if (node -> data .un_op_code == CALL)
-            {
-                printf ("\t\tCALL " FUNC_LABEL,
-                        node -> left -> data .var_index);
-            }
-
-            else
-            {
-                PrintNodeToAsm (node -> right);
-
-                printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
-            }
+            PrintNodeToAsm (node -> right);
+            printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
 
             break;
         }
@@ -198,6 +201,27 @@ PrintWhileOperation (const BinTree_node* const node)
 }
 
 static void
+PrintCallOperation (const BinTree_node* const node)
+{
+    assert (node);
+
+    PrintCallArgs (node -> right);
+
+    printf ("\t\tCALL " FUNC_LABEL,
+            node -> left -> data .var_index);
+}
+
+static void
+PrintCallArgs (const BinTree_node* const node)
+{
+    if (!node) return;
+
+    printf ("\t\tPUSH [%zd]\n", node -> data .var_index);
+
+    PrintCallArgs (node -> right);
+}
+
+static void
 PrintFunction (const BinTree_node* const node)
 {
     assert (node);
@@ -213,11 +237,11 @@ PrintFunction (const BinTree_node* const node)
 
     printf (FUNC_LABEL, func_number++);
 
+    PrintFunctionArgs (node -> right);
+
     PrintNodeToAsm (node -> left);
 
     printf ("\t\tret\n\n");
-
-    PrintNodeToAsm (node -> right);
 }
 
 static void
@@ -234,4 +258,14 @@ PrintMainFunction (const BinTree_node* const node)
     PrintNodeToAsm (node -> left);
 
     printf ("\t\thlt\n");
+}
+
+static void
+PrintFunctionArgs (const BinTree_node* const node)
+{
+    if (!node) return;
+
+    printf ("\t\tPOP [%zd]\n", node -> data .var_index);
+
+    PrintFunctionArgs (node -> right);
 }

@@ -4,26 +4,30 @@
 /*
  * Here is the description of grammar rules of the code.
  *
- * G     stands for GetGrammar   (),
- * F     stands for GetFunction  (),
- * Op    stands for GetOperation (),
- * Call  stands for GetCall      (),
- * A     stands for GetAssume    (),
- * If    stands for GetIf        (),
- * While stands for GetWhile     (),
- * B     stands for GetBody      (),
- * E     stands for GetExpression(),
- * T     stands for GetTerm      (),
- * P     stands for GetPrimary   (),
- * V     stands for GetValue     (),
- * N     stands for GetNumber    (),
- * Var   stands for GetVariable  ().
+ * G     stands for GetGrammar      (),
+ * MF    stands for mazafaka (MultipleFunctions),
+ * F     stands for GetFunction     (),
+ * FArgs stands for GetFunctionArgs (),
+ * Op    stands for GetOperation    (),
+ * Call  stands for GetCall         (),
+ * A     stands for GetAssume       (),
+ * If    stands for GetIf           (),
+ * While stands for GetWhile        (),
+ * B     stands for GetBody         (),
+ * E     stands for GetExpression   (),
+ * T     stands for GetTerm         (),
+ * P     stands for GetPrimary      (),
+ * V     stands for GetValue        (),
+ * N     stands for GetNumber       (),
+ * Var   stands for GetVariable     ().
  *
- * G     ::= F+ '\0'
- * F     ::= "Mellon" B
+ * G     ::= MF '\0'
+ * MF    ::= F+
+ * F     ::= "Mellon" {FArgs}? B
+ * FArgs ::= "Fellowship of the Ring" Var+
  * B     ::= "Black" Op+ "Gates"
  * Op    ::= Call | A | If | While "Precious"
- * Call  ::= "That still only counts as one" Var
+ * Call  ::= "That still only counts as one" Var FArgs
  * A     ::= "Give him" Var "A pony" E
  * If    ::= "One does not simply walk into Mordor" P B B?
  * While ::= "So it begins" P B
@@ -32,7 +36,7 @@
  * T     ::= U {[* / ^] U}*
  * P     ::= "Unexpected" E "Journey" | V
  * V     ::= N | Var
- * N     ::= [0 - 9]+ {.[0 - 9]+}? // VARIETY OF CASES!!!
+ * N     ::= [+ -]? {[0 - 9]+ {.[0 - 9]*}?} | {[0 - 9]* {.[0 - 9]+}}
  * Var   ::= {[A - Z] | [a - z]} {[A - Z] | [a - z] | [0 - 9]}*
  */
 
@@ -75,6 +79,9 @@ GetFunction          (GrammarParams);
 
 static var_index_type
 GetFunctionIndex     (GrammarParams);
+
+static BinTree_node*
+GetFunctionArgs      (GrammarParams);
 
 static BinTree_node*
 GetOperation         (GrammarParams);
@@ -361,11 +368,13 @@ GetFunction (GrammarParams)
     var_index_type cur_func_index = GetFunctionIndex (GiveParams);
     (*token_index)++;
 
+    BinTree_node* func_args = GetFunctionArgs (GiveParams);
+
     BinTree_node* func_body = GetBody (GiveParams);
 
     BinTree_node* ret_node =
         BinTree_CtorNode (FUNCTION, cur_func_index,
-                          func_body, nullptr, nullptr, tree);
+                          func_body, func_args, nullptr, tree);
 
     return ret_node;
 }
@@ -400,6 +409,38 @@ GetFunctionIndex (GrammarParams)
     StackPush (tree -> name_table .func_table, new_str);
 
     return tree -> name_table .func_table -> data_size - 1;
+}
+
+static BinTree_node*
+GetFunctionArgs (GrammarParams)
+{
+    params_assert;
+
+    BinTree_node* ret_node = nullptr;
+    BinTree_node* cur_node = nullptr;
+
+    if (tokens_array [*token_index] .token_data_type == PUNCTUATION &&
+        tokens_array [*token_index] .punct_op_code   == FUNC_ARGS)
+    {
+        (*token_index)++;
+
+        while (tokens_array [*token_index] .token_data_type == VARIABLE)
+        {
+            if (!ret_node)
+            {
+                ret_node = GetVariable (GiveParams);
+                cur_node = ret_node;
+            }
+
+            else
+            {
+                cur_node -> right = GetVariable (GiveParams);
+                cur_node = cur_node -> right;
+            }
+        }
+    }
+
+    return ret_node;
 }
 
 static BinTree_node*
@@ -583,12 +624,14 @@ GetCall (GrammarParams)
         GetFunctionIndex (GiveParams);
     (*token_index)++;
 
+    BinTree_node* func_args = GetFunctionArgs (GiveParams);
+
     BinTree_node* calling_func =
         BinTree_CtorNode (FUNCTION, calling_func_index, nullptr,
                           nullptr, nullptr, tree);
 
-    return BinTree_CtorNode (UN_OP, CALL, calling_func,
-                             nullptr, nullptr, tree);
+    return BinTree_CtorNode (BIN_OP, CALL, calling_func,
+                             func_args, nullptr, tree);
 }
 
 static BinTree_node*
