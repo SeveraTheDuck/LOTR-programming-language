@@ -117,16 +117,13 @@ BinTree_PrintNodes (const BinTree_node* const node,
             if (node -> data .var_index <
                 (var_index_type) tree -> name_table .var_table -> data_size)
             {
-                fprintf (stderr, "%s\n", tree -> name_table .var_table -> data
-                       [node -> data .var_index]);
                 fputs (tree -> name_table .var_table -> data
                        [node -> data .var_index], image_file);
             }
 
             else
             {
-                fputs   ("Unknown variable", image_file);
-                fprintf (stderr, "Unknown variable\n");
+                fprintf (image_file, "Var%zd", node -> data .var_index);
             }
             break;
         }
@@ -142,8 +139,7 @@ BinTree_PrintNodes (const BinTree_node* const node,
 
             else
             {
-                fputs   ("Unknown function", image_file);
-                fprintf (stderr, "Unknown function\n");
+                fprintf (image_file, "Func%zd", node -> data .func_index);
             }
             break;
         }

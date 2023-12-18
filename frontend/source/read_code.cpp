@@ -578,7 +578,17 @@ static BinTree_node*
 GetCall (GrammarParams)
 {
     params_assert;
-    return GetVariable (GiveParams);
+
+    var_index_type calling_func_index =
+        GetFunctionIndex (GiveParams);
+    (*token_index)++;
+
+    BinTree_node* calling_func =
+        BinTree_CtorNode (FUNCTION, calling_func_index, nullptr,
+                          nullptr, nullptr, tree);
+
+    return BinTree_CtorNode (UN_OP, CALL, calling_func,
+                             nullptr, nullptr, tree);
 }
 
 static BinTree_node*

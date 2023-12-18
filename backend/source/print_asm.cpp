@@ -5,7 +5,7 @@ static const char* const asm_op_array [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
      "call",
-     "ret",
+     "return_value",
 
      "ADD", "SUB", "MUL", "DIV", "POW",
      "==", ">", "<", ">=", "<=", "!=",
@@ -23,6 +23,8 @@ static const char* const asm_op_array [NUM_OF_KEY_WORDS] =
 #define WHILE_TRUE_LABEL  ":while_true_label%d\n"
 #define WHILE_FALSE_LABEL ":while_false_label%d\n"
 
+#define FUNC_LABEL        ":func%zd\n"
+
 static void
 PrintNodeToAsm      (const BinTree_node* const node);
 
@@ -31,6 +33,12 @@ PrintIfOperation    (const BinTree_node* const node);
 
 static void
 PrintWhileOperation (const BinTree_node* const node);
+
+static void
+PrintFunction (const BinTree_node* const node);
+
+static void
+PrintMainFunction (const BinTree_node* const node);
 
 void
 PrintTreeToAsm (const BinTree* const tree)
@@ -64,7 +72,7 @@ PrintNodeToAsm (const BinTree_node* const node)
             if (node -> data .bin_op_code == ASSUME_BEGIN)
             {
                 PrintNodeToAsm (node -> right);
-                printf ("\t\tPOP [%d]\n", node -> left -> data .var_index);
+                printf ("\t\tPOP [%zd]\n", node -> left -> data .var_index);
             }
 
             else
@@ -80,9 +88,18 @@ PrintNodeToAsm (const BinTree_node* const node)
 
         case UN_OP:
         {
-            PrintNodeToAsm (node -> right);
+            if (node -> data .un_op_code == CALL)
+            {
+                printf ("\t\tCALL " FUNC_LABEL,
+                        node -> left -> data .var_index);
+            }
 
-            printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
+            else
+            {
+                PrintNodeToAsm (node -> right);
+
+                printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
+            }
 
             break;
         }
@@ -111,7 +128,13 @@ PrintNodeToAsm (const BinTree_node* const node)
 
         case VARIABLE:
         {
-            printf ("\t\tPUSH [%d]\n", node -> data .var_index);
+            printf ("\t\tPUSH [%zd]\n", node -> data .var_index);
+            break;
+        }
+
+        case FUNCTION:
+        {
+            PrintFunction (node);
             break;
         }
 
@@ -172,4 +195,43 @@ PrintWhileOperation (const BinTree_node* const node)
     PrintNodeToAsm (node -> right -> right);
 
     printf (WHILE_FALSE_LABEL, cur_while_number);
+}
+
+static void
+PrintFunction (const BinTree_node* const node)
+{
+    assert (node);
+
+    static size_t func_number = 0;
+
+    if (func_number == 0)
+    {
+        func_number++;
+        PrintMainFunction (node);
+        return;
+    }
+
+    printf (FUNC_LABEL, func_number++);
+
+    PrintNodeToAsm (node -> left);
+
+    printf ("\t\tret\n\n");
+
+    PrintNodeToAsm (node -> right);
+}
+
+static void
+PrintMainFunction (const BinTree_node* const node)
+{
+    assert (node);
+
+    printf ("\t\tjmp :main\n\n");
+
+    PrintNodeToAsm (node -> right);
+
+    printf (":main\n");
+
+    PrintNodeToAsm (node -> left);
+
+    printf ("\t\thlt\n");
 }
