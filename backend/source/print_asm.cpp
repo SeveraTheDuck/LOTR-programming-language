@@ -3,9 +3,9 @@
 static const char* const asm_op_array [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
-     "call",
      "return_value",
 
+     "call",
      "ADD", "SUB", "MUL", "DIV", "POW",
      "==", ">", "<", ">=", "<=", "!=",
      "=",
@@ -35,6 +35,9 @@ PrintWhileOperation (const BinTree_node* const node);
 
 static void
 PrintCallOperation  (const BinTree_node* const node);
+
+static void
+PrintRetOperation   (const BinTree_node* const node);
 
 static void
 PrintCallArgs       (const BinTree_node* const node);
@@ -101,8 +104,16 @@ PrintNodeToAsm (const BinTree_node* const node)
 
         case UN_OP:
         {
-            PrintNodeToAsm (node -> right);
-            printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
+            if (node -> data .un_op_code == RET)
+            {
+                PrintRetOperation (node);
+            }
+
+            else
+            {
+                PrintNodeToAsm (node -> right);
+                printf ("\t\t%s\n", asm_op_array [node -> data .un_op_code]);
+            }
 
             break;
         }
@@ -137,7 +148,8 @@ PrintNodeToAsm (const BinTree_node* const node)
 
         case FUNCTION:
         {
-            PrintFunction (node);
+            PrintFunction (node -> left);
+            PrintNodeToAsm (node -> right);
             break;
         }
 
@@ -219,6 +231,15 @@ PrintCallArgs (const BinTree_node* const node)
     printf ("\t\tPUSH [%zd]\n", node -> data .var_index);
 
     PrintCallArgs (node -> right);
+}
+
+static void
+PrintRetOperation (const BinTree_node* const node)
+{
+    assert (node);
+
+    PrintNodeToAsm (node -> right);
+    printf ("\t\tPOP rax\n\t\tret\n");
 }
 
 static void
