@@ -1,0 +1,11 @@
+Mellon main
+Black
+    Give hin Bilbo A pony 6 Precious
+    call fact Fellowship of the Ring Bilbo
+Gates
+
+Mellon fact
+Fellowship of the Ring n
+Black
+    Return of the King n * call fact Fellowship of the Ring n - 1
+Gates

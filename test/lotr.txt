@@ -1,32 +1,11 @@
 Mellon main
 Black
-    One does not simply walk into Mordor Unexpected Bilbo sub 111 Journey
-    Black
-        Give him Bilbo A pony Mirtle add Unexpected 51 add 2 Journey Precious
-    Gates
-    Black
-        One does not simply walk into Mordor Unexpected Bilbo sub 111 Journey
-        Black
-            Give him Bilbo A pony Mirtle add Unexpected 51 add 2 Journey Precious
-        Gates
-        Black
-            That still only counts as one foo Fellowship of the Ring Bilbo Mirtle Precious
-        Gates Precious
-    Gates Precious
-
-    That still only counts as one foo Fellowship of the Ring Mirtle Bilbo Precious
+    Give him Bilbo A pony Mirtle add Unexpected 51 add 2 Journey Precious
+    foo Fellowship Bilbo Gollum Mirtle of the Ring Precious
 Gates
 
-Mellon foo
-Fellowship of the Ring Bilbo Mirtle
+Mellon foo Fellowship Thorin Gollum Gandalf of the Ring
 Black
-    Give him Mirtle A pony Bilbo Precious
-    Return of the King Mirtle Precious
-Gates
-
-Mellon poo
-Fellowship of the Ring Frodo Sam
-Black
-    Give him Frodo A pony Sam Precious
-    Return of the King Frodo Precious
+    Give him Thorin A pony Gandalf Precious
+    Return of the King Thorin Precious
 Gates
