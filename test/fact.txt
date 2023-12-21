@@ -1,11 +1,19 @@
+# This program finds the factorial of number n #
+
 Mellon main
 Black
     I see you Bilbo Precious
 
-    Give him result A pony fact Fellowship Bilbo of the Ring Precious
+    Give him result a pony fact Fellowship Bilbo of the Ring Precious
 
     Some form of Elvish result Precious
 Gates
+
+
+#
+  The factorial recursive function
+  Receives n and returns n * fact (n - 1)
+#
 
 Mellon fact
 Fellowship n of the Ring
@@ -15,5 +23,5 @@ Black
         Return of the King 1 Precious
     Gates Precious
 
-    Return of the King n * fact Fellowship n - 1 of the Ring Precious
+    Return of the King n mul fact Fellowship n sub 1 of the Ring Precious
 Gates

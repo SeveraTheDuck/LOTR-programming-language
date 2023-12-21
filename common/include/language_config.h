@@ -26,7 +26,9 @@ enum un_op_code
 
     RET,
 
-    NUM_OF_UN_OP // 9
+    DIFF,
+
+    NUM_OF_UN_OP // 10
 };
 
 enum bin_op_code
@@ -100,6 +102,8 @@ struct data
     };
 };
 
+const char COMMENT_SYMBOL = '#';
+
 const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
     {
      "SIN", "COS", "SQRT", "LN", "!",
@@ -107,6 +111,7 @@ const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
      "OUT_S",
      "I see you",                                           // in
      "Return of the King",                                  // ret
+     "Narsil",                                              // differentiate
 
      "add", "sub", "mul", "div", "pow",
      "==", ">", "<", ">=", "<=", "!=",

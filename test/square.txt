@@ -1,3 +1,16 @@
+# This program solves the quadratic equation for real numbers #
+
+#
+  The main function receives a, b and c coeffs of the quadratic formula
+  and solves the equation. Possible variants:
+    1) Quadratic equation with two real solutions
+    2) Quadratic equation with one real solution  (D == 0)
+    3) Quadratic equation with no  real solutions (D < 0)
+    4) Linear    equation with no  real solutions
+    5) Linear    equation with one real solution
+    6) Linear    equation with infinite number of solutions
+#
+
 Mellon main
 Black
     I see you a Precious
@@ -9,6 +22,7 @@ Black
 Gates
 
 
+# This function calls for SolveLinearEquation if a == 0 and solves quadratic equation if not #
 Mellon SolveQuadraticEquation
     Fellowship a Gollum b Gollum c of the Ring
 Black
@@ -26,6 +40,7 @@ Black
 Gates
 
 
+# This function solves linear equation (when a == 0) and prints its roots #
 Mellon SolveLinearEquation
     Fellowship b Gollum c of the Ring
 Black
@@ -50,6 +65,7 @@ Black
 Gates
 
 
+# This function finds the discriminant of the quadratic equation #
 Mellon FindDiscriminant
     Fellowship a Gollum b Gollum c of the Ring
 Black
@@ -57,6 +73,7 @@ Black
 Gates
 
 
+# This function prints roots of the quadratic equation #
 Mellon PrintRoots
     Fellowship Disc Gollum a Gollum b of the Ring
 Black

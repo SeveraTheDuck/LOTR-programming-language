@@ -23,17 +23,17 @@
  *
  * G     ::= MF '\0'
  * MF    ::= F+
- * F     ::= "Mellon" {FArgs}? B
- * FArgs ::= "Fellowship" E {, E}* "of the Ring"
+ * F     ::= "Mellon" Var {FArgs}? B
+ * FArgs ::= "Fellowship" E {"Gollum" E}* "of the Ring"
  * B     ::= "Black" Op+ "Gates"
- * Op    ::= Call | A | If | While "Precious"
+ * Op    ::= Var {FArgs}? | A | If | While "Precious"
  * A     ::= "Give him" Var "A pony" E
  * If    ::= "One does not simply walk into Mordor" P B B?
  * While ::= "So it begins" P B
  *
  * C     ::= E {[== > < >= <= !=] E}?
- * E     ::= T {[+ -] T}*
- * T     ::= U {[* / ^] U}*
+ * E     ::= T {[add sub] T}*
+ * T     ::= U {[mul div pow] U}*
  * P     ::= "Unexpected" E "Journey" | V
  * V     ::= N | Var
  * N     ::= [+ -]? {[0 - 9]+ {.[0 - 9]*}?} | {[0 - 9]* {.[0 - 9]+}}
@@ -249,6 +249,21 @@ SeparateToTokens (const char*    const input_file_name,
         if (isspace (input_parsed .buffer [index]))
         {
             index++;
+            continue;
+        }
+
+        if (input_parsed .buffer [index] == COMMENT_SYMBOL)
+        {
+            index++;
+
+            while (index < input_parsed .buffer_size &&
+                   input_parsed .buffer [index] != COMMENT_SYMBOL)
+            {
+                index++;
+            }
+
+            index++;
+
             continue;
         }
 
