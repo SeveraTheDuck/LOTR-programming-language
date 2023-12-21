@@ -1,0 +1,89 @@
+Mellon main
+Black
+    I see you a Precious
+    I see you b Precious
+    I see you c Precious
+
+    SolveQuadraticEquation
+        Fellowship a Gollum b Gollum c of the Ring Precious
+Gates
+
+
+Mellon SolveQuadraticEquation
+    Fellowship a Gollum b Gollum c of the Ring
+Black
+    One does not simply walk into Mordor Unexpected a == 0 Journey
+    Black
+        Return of the King SolveLinearEquation
+            Fellowship b Gollum c of the Ring Precious
+    Gates Precious
+
+    Give him Disc a pony FindDiscriminant
+        Fellowship a Gollum b Gollum c of the Ring Precious
+
+    PrintRoots
+        Fellowship Disc Gollum a Gollum b of the Ring Precious
+Gates
+
+
+Mellon SolveLinearEquation
+    Fellowship b Gollum c of the Ring
+Black
+    One does not simply walk into Mordor Unexpected b == 0 Journey
+    Black
+        One does not simply walk into Mordor Unexpected c == 0 Journey
+        Black
+            Some form of Elvish 8 Precious
+            Return of the King  8 Precious
+        Gates
+
+        Black
+            Some form of Elvish 0 Precious
+            Return of the King  0 Precious
+        Gates Precious
+    Gates Precious
+
+    Give him onlyRoot a pony -1 mul c div b Precious
+
+    Some form of Elvish onlyRoot Precious
+    Return of the King onlyRoot Precious
+Gates
+
+
+Mellon FindDiscriminant
+    Fellowship a Gollum b Gollum c of the Ring
+Black
+    Return of the King Unexpected b pow 2 sub 4 mul a mul c Journey Precious
+Gates
+
+
+Mellon PrintRoots
+    Fellowship Disc Gollum a Gollum b of the Ring
+Black
+    One does not simply walk into Mordor Unexpected Disc < 0 Journey
+    Black
+        Some form of Elvish 0 Precious
+        Return of the King  0 Precious
+    Gates Precious
+
+    One does not simply walk into Mordor Unexpected Disc == 0 Journey
+    Black
+        Some form of Elvish 1 Precious
+        Some form of Elvish Unexpected -1 mul b div 2 div a Journey Precious
+        Return of the King  1 Precious
+    Gates Precious
+
+    Give him rDisc a pony sqrt Disc Precious
+
+    Some form of Elvish 2 Precious
+
+    Some form of Elvish Unexpected
+        Unexpected -1 mul b add rDisc Journey
+        div 2 div a Journey Precious
+
+    Some form of Elvish Unexpected
+        Unexpected -1 mul b sub rDisc Journey
+        div 2 div a Journey Precious
+
+    Return of the King  2 Precious
+Gates

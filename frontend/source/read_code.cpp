@@ -9,11 +9,11 @@
  * F     stands for GetFunction     (),
  * FArgs stands for GetFunctionArgs (),
  * Op    stands for GetOperation    (),
- * Ret   stands for GetReturn       (),
  * A     stands for GetAssume       (),
  * If    stands for GetIf           (),
  * While stands for GetWhile        (),
  * B     stands for GetBody         (),
+ * C     stands for GetComparison   (),
  * E     stands for GetExpression   (),
  * T     stands for GetTerm         (),
  * P     stands for GetPrimary      (),
@@ -26,12 +26,12 @@
  * F     ::= "Mellon" {FArgs}? B
  * FArgs ::= "Fellowship" E {, E}* "of the Ring"
  * B     ::= "Black" Op+ "Gates"
- * Op    ::= Call | Ret | A | If | While "Precious"
- * Ret   ::= "Return of the King" E
+ * Op    ::= Call | A | If | While "Precious"
  * A     ::= "Give him" Var "A pony" E
  * If    ::= "One does not simply walk into Mordor" P B B?
  * While ::= "So it begins" P B
  *
+ * C     ::= E {[== > < >= <= !=] E}?
  * E     ::= T {[+ -] T}*
  * T     ::= U {[* / ^] U}*
  * P     ::= "Unexpected" E "Journey" | V
@@ -50,6 +50,8 @@
 #undef IsFunction
 #undef IsVariable
 #undef IsPunctuation
+
+
 
 /* LEXICAL ANALYSIS BEGIN */
 
@@ -129,6 +131,9 @@ static BinTree_node*
 GetBody              (GrammarParams);
 
 static BinTree_node*
+GetComparison        (GrammarParams);
+
+static BinTree_node*
 GetExpression        (GrammarParams);
 
 static BinTree_node*
@@ -198,10 +203,6 @@ ReadTree (const char*    const input_file_name,
     tokens_list .list_data [List_DUMMY_ELEMENT] .token_data_type = NO_TYPE;
 
     SeparateToTokens (input_file_name, &tokens_list, tree);
-    for (size_t i = 1; i < tokens_list.list_n_elems; ++i)
-    {
-        fprintf (stderr, "%zd: %d\n", i, tokens_list.list_data[i].token_data_type);
-    }
 
     size_t token_index = 0;
     tree->root = GetGrammar (&tokens_list, &token_index, tree);
@@ -243,6 +244,8 @@ SeparateToTokens (const char*    const input_file_name,
 
     while (index < input_parsed .buffer_size)
     {
+        size_t cur_index = index;
+
         if (isspace (input_parsed .buffer [index]))
         {
             index++;
@@ -250,6 +253,8 @@ SeparateToTokens (const char*    const input_file_name,
         }
 
         GetTokenData (&input_parsed, &index, &cur_token);
+
+        syn_assert (cur_index != index);
 
         List_PushBack (&cur_token, tokens_list);
     }
@@ -303,7 +308,9 @@ GetTokenData (const file_input* const input_parsed,
         }
     }
 
-    if (isnumber (input_parsed -> buffer [*index]))
+    if (isnumber (input_parsed -> buffer [*index]) ||
+        input_parsed -> buffer [*index] == '+'     ||
+        input_parsed -> buffer [*index] == '-')
     {
         int32_t n_read_elem = 0;
 
@@ -573,76 +580,63 @@ GetOperation (GrammarParams)
     op_code_type   cur_op_code    = OP_CODE_POISON;
     var_index_type cur_func_index = VAR_INDEX_POISON;
 
-    if (IsBinOperation (tokens_array, *token_index))
+
+    BinTree_node* new_node  = nullptr;
+    BinTree_node* ret_value = nullptr;
+
+    if (IsUnOperation (tokens_array, *token_index))
     {
-        cur_op_code = tokens_array [*token_index] .bin_op_code;
+        cur_op_code = tokens_array [(*token_index)++] .un_op_code;
+
+        ret_value = GetExpression (GiveParams);
+        new_node  = BinTree_CtorNode (UN_OP, cur_op_code, nullptr,
+                                      ret_value, nullptr, tree);
     }
 
     else if (IsKeyOperation (tokens_array, *token_index))
     {
-        cur_op_code = tokens_array [*token_index] .key_op_code;
+        cur_op_code = tokens_array [(*token_index)++] .key_op_code;
+
+        switch (cur_op_code)
+        {
+            case IF:
+                new_node = GetIf (GiveParams);
+                break;
+
+            case WHILE:
+                new_node = GetWhile (GiveParams);
+                break;
+
+            default:
+                syn_assert (0);
+        }
     }
 
-    else if (IsUnOperation (tokens_array, *token_index))
+    else if (IsBinOperation (tokens_array, *token_index))
     {
-        cur_op_code = tokens_array [*token_index] .un_op_code;
+        cur_op_code = tokens_array [(*token_index)++] .bin_op_code;
+        syn_assert (cur_op_code == ASSUME_BEGIN);
+
+        new_node = GetAssume (GiveParams);
     }
 
-    else if (IsFunction    (tokens_array, *token_index))
+    else if (IsFunction (tokens_array, *token_index))
     {
         cur_func_index = GetFunctionIndex (GiveParams);
+        (*token_index)++;
+
+        if (cur_func_index != VAR_INDEX_POISON)
+        {
+            BinTree_node* func_args = GetFunctionArgs (GiveParams);
+
+            new_node = BinTree_CtorNode (FUNCTION, cur_func_index,
+                                         nullptr, func_args, nullptr, tree);
+        }
     }
 
     else
     {
         syn_assert (0);
-    }
-
-    (*token_index)++;
-
-    BinTree_node* new_node  = nullptr;
-    BinTree_node* ret_value = nullptr;
-
-    switch (cur_op_code)
-    {
-        case ASSUME_BEGIN:
-            new_node = GetAssume      (GiveParams);
-            break;
-
-        case IF:
-            new_node = GetIf          (GiveParams);
-            break;
-
-        case WHILE:
-            new_node = GetWhile       (GiveParams);
-            break;
-
-        case RET:
-            ret_value = GetExpression (GiveParams);
-            new_node  = BinTree_CtorNode (UN_OP, RET, nullptr,
-                                          ret_value, nullptr, tree);
-            break;
-
-        /* function case */
-        case OP_CODE_POISON:
-            if (cur_func_index != VAR_INDEX_POISON)
-            {
-                BinTree_node* func_args = GetFunctionArgs (GiveParams);
-                new_node =
-                    BinTree_CtorNode (FUNCTION, cur_func_index,
-                                      nullptr, func_args, nullptr, tree);
-
-                break;
-            }
-
-            else
-            {
-                [[fallthrough]];
-            }
-
-        default:
-            syn_assert (0);
-            return nullptr;
     }
 
     syn_assert (IsPunctuation (tokens_array, *token_index) &&
@@ -668,7 +662,7 @@ GetAssume (GrammarParams)
     (*token_index)++;
 
     BinTree_node* right_value =
-        GetExpression (GiveParams);
+        GetComparison (GiveParams);
 
     return BinTree_CtorNode (BIN_OP, ASSUME_BEGIN, left_value,
                              right_value, nullptr, tree);
@@ -769,6 +763,44 @@ GetBody (GrammarParams)
 }
 
 static BinTree_node*
+GetComparison (GrammarParams)
+{
+    params_assert;
+
+    BinTree_node* left_value  = GetExpression (GiveParams);
+
+    BinTree_node* right_value = nullptr;
+    BinTree_node* new_node    = nullptr;
+
+    bool is_bin_operation = IsBinOperation (tokens_array, *token_index);
+
+    if (!is_bin_operation) return left_value;
+
+    bool is_comparison_sign =
+        tokens_array [*token_index] .bin_op_code == IS_EQUAL         ||
+        tokens_array [*token_index] .bin_op_code == GREATER          ||
+        tokens_array [*token_index] .bin_op_code == LESS             ||
+        tokens_array [*token_index] .bin_op_code == GREATER_OR_EQUAL ||
+        tokens_array [*token_index] .bin_op_code == LESS_OR_EQUAL    ||
+        tokens_array [*token_index] .bin_op_code == NOT_EQUAL;
+
+    if (is_bin_operation && is_comparison_sign)
+    {
+        op_code_type op_code =
+            tokens_array [(*token_index)++] .bin_op_code;
+
+        right_value = GetExpression (GiveParams);
+
+        new_node = BinTree_CtorNode (BIN_OP, op_code, left_value,
+                                     right_value, nullptr, tree);
+
+        left_value = new_node;
+    }
+
+    return left_value;
+}
+
+static BinTree_node*
 GetExpression (GrammarParams)
 {
     params_assert;
@@ -779,6 +811,8 @@ GetExpression (GrammarParams)
     BinTree_node* new_node    = nullptr;
 
     bool is_bin_operation = IsBinOperation (tokens_array, *token_index);
+
+    if (!is_bin_operation) return left_value;
 
     bool is_add = tokens_array [*token_index] .bin_op_code == ADD;
 
@@ -817,11 +851,15 @@ GetTerm (GrammarParams)
 
     bool is_bin_operation = IsBinOperation (tokens_array, *token_index);
 
+    if (!is_bin_operation) return left_value;
+
     bool is_mul = tokens_array [*token_index] .bin_op_code == MUL;
 
     bool is_div = tokens_array [*token_index] .bin_op_code == DIV;
 
-    while (is_bin_operation && (is_mul || is_div))
+    bool is_pow = tokens_array [*token_index] .bin_op_code == POW;
+
+    while (is_bin_operation && (is_mul || is_div || is_pow))
     {
         op_code_type op_code =
             tokens_array [(*token_index)++] .bin_op_code;
@@ -838,6 +876,8 @@ GetTerm (GrammarParams)
         is_mul = tokens_array [*token_index] .bin_op_code == MUL;
 
         is_div = tokens_array [*token_index] .bin_op_code == DIV;
+
+        is_pow = tokens_array [*token_index] .bin_op_code == POW;
     }
 
     return left_value;
@@ -855,7 +895,7 @@ GetPrimary (GrammarParams)
     {
         (*token_index)++;
 
-        node = GetExpression (GiveParams);
+        node = GetComparison (GiveParams);
 
         syn_assert (IsPunctuation (tokens_array, *token_index) &&
                     tokens_array [*token_index]
@@ -874,6 +914,12 @@ GetValue (GrammarParams)
 {
     params_assert;
 
+    var_index_type func_index = VAR_INDEX_POISON;
+    BinTree_node*  func_args  = nullptr;
+
+    op_code_type   un_operation = OP_CODE_POISON;
+    BinTree_node*  un_op_args   = nullptr;
+
     switch (tokens_array [*token_index] .token_data_type)
     {
         case NUMBER:
@@ -883,20 +929,34 @@ GetValue (GrammarParams)
                                   nullptr, nullptr, nullptr, tree);
 
         case VARIABLE:
-            return GetVariable (GiveParams);
+            return GetVariable  (GiveParams);
 
         case BIN_OP:
             return GetOperation (GiveParams);
 
-        case FUNCTION:    [[fallthrough]];
+        case FUNCTION:
+            func_index = GetFunctionIndex (GiveParams);
+            (*token_index)++;
+            func_args  = GetFunctionArgs  (GiveParams);
+
+            return BinTree_CtorNode (FUNCTION, func_index, nullptr,
+                                     func_args, nullptr, tree);
+
+        case UN_OP:
+            un_operation = tokens_array [*token_index] .un_op_code;
+            (*token_index)++;
+            un_op_args = GetExpression (GiveParams);
+
+            return
+                BinTree_CtorNode (UN_OP, un_operation, nullptr,
+                                  un_op_args, nullptr, tree);
+
         case PUNCTUATION: [[fallthrough]];
-        case UN_OP:       [[fallthrough]];
         case KEY_OP:      [[fallthrough]];
         case NO_TYPE:     [[fallthrough]];
 
         default:
-            fprintf (stderr, "\n\n%zd\n", *token_index);
-            syn_assert (NO_TYPE);
+            syn_assert (0);
             return nullptr;
     }
 }

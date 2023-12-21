@@ -1,11 +1,19 @@
 Mellon main
 Black
-    Give hin Bilbo A pony 6 Precious
-    call fact Fellowship of the Ring Bilbo
+    I see you Bilbo Precious
+
+    Give him result A pony fact Fellowship Bilbo of the Ring Precious
+
+    Some form of Elvish result Precious
 Gates
 
 Mellon fact
-Fellowship of the Ring n
+Fellowship n of the Ring
 Black
-    Return of the King n * call fact Fellowship of the Ring n - 1
+    One does not simply walk into Mordor Unexpected n == 1 Journey
+    Black
+        Return of the King 1 Precious
+    Gates Precious
+
+    Return of the King n * fact Fellowship n - 1 of the Ring Precious
 Gates

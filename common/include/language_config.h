@@ -42,7 +42,7 @@ enum bin_op_code
     LESS,
     GREATER_OR_EQUAL,
     LESS_OR_EQUAL,
-    NOT_QEUAL,
+    NOT_EQUAL,
 
     ASSUME_BEGIN,
 
@@ -102,10 +102,13 @@ struct data
 
 const char* const KEY_WORDS_ARRAY [NUM_OF_KEY_WORDS] =
     {
-     "SIN", "COS", "SQRT", "LN", "!", "OUT", "OUT_S", "IN",
+     "SIN", "COS", "SQRT", "LN", "!",
+     "Some form of Elvish",                                 // out
+     "OUT_S",
+     "I see you",                                           // in
      "Return of the King",                                  // ret
 
-     "ADD", "SUB", "MUL", "DIV", "POW",
+     "add", "sub", "mul", "div", "pow",
      "==", ">", "<", ">=", "<=", "!=",
      "Give him",                                            // =
 
